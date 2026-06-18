@@ -22,6 +22,9 @@ build.log
 # Test files
 test.md
 
+# Lokalne notatki workflow (nie do repo)
+update.md
+
 # Installer
 installer/
 
