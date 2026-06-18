@@ -25,8 +25,11 @@ test.md
 # Lokalne notatki workflow (nie do repo)
 update.md
 
-# Installer
-installer/
+# Installer — w repo tylko zrodlo (installer/WinMD.iss + build-installer.ps1).
+# Artefakty i PRYWATNE podpisywanie zostaja lokalne (cert/klucz nigdy do repo).
+installer/*.exe
+installer/build.ps1
+installer/sign.cmd
 
 # VS Code / Rider / VS
 .vs/
