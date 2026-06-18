@@ -22,8 +22,8 @@ build.log
 # Test files
 test.md
 
-# Compiled installer output
-installer/WinMD-Setup.exe
+# Installer
+installer/
 
 # VS Code / Rider / VS
 .vs/
