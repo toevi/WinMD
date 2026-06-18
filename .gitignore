@@ -22,8 +22,9 @@ build.log
 # Test files
 test.md
 
-# Lokalne notatki workflow (nie do repo)
+# Lokalne notatki/instrukcje (nie do repo)
 update.md
+CLAUDE.md
 
 # Installer — w repo tylko zrodlo (installer/WinMD.iss + build-installer.ps1).
 # Artefakty i PRYWATNE podpisywanie zostaja lokalne (cert/klucz nigdy do repo).
