@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="WinMD.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Microsoft.UI.Xaml.Controls">
+
+    <Grid x:Name="Root" Background="{ThemeResource PageSurfaceBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- ═══ Wiersz 0: Pasek narzędzi ═══ -->
+        <Grid Grid.Row="0" Background="{ThemeResource FormatBarSurfaceBrush}" Padding="4,2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="2">
+                <Button Content="New" Command="{Binding NewCommand}" ToolTipService.ToolTip="New document (Ctrl+N)" />
+                <Button Content="Open" Command="{Binding OpenCommand}" ToolTipService.ToolTip="Open file (Ctrl+O)" />
+                <Button Content="Save" Command="{Binding SaveCommand}" ToolTipService.ToolTip="Save (Ctrl+S)" />
+                <AppBarSeparator />
+                <Button Content="Edit" Command="{Binding GoToEditCommand}"
+                        ToolTipService.ToolTip="Switch to editing (Ctrl+E)"
+                        Visibility="{Binding IsPreviewMode, Converter={StaticResource BoolToVisibility}}" />
+                <Button Content="Preview" Command="{Binding GoToPreviewCommand}"
+                        ToolTipService.ToolTip="Switch to preview (Ctrl+E)"
+                        Visibility="{Binding IsPreviewMode, Converter={StaticResource BoolToVisibility}, ConverterParameter=invert}" />
+                <AppBarSeparator />
+                <Button Content="↩" Command="{Binding UndoCommand}" ToolTipService.ToolTip="Undo (Ctrl+Z)" />
+                <Button Content="↪" Command="{Binding RedoCommand}" ToolTipService.ToolTip="Redo (Ctrl+Y)" />
+                <AppBarSeparator />
+                <Button Content="🔍" Click="OnFindButtonClick" ToolTipService.ToolTip="Find (Ctrl+F)" />
+                <AppBarSeparator />
+                <Button Content="⋮" ToolTipService.ToolTip="More options">
+                    <Button.Flyout>
+                        <MenuFlyout>
+                            <MenuFlyoutItem Text="Export PDF" Command="{Binding ExportPdfCommand}" />
+                            <MenuFlyoutItem Text="Export HTML" Command="{Binding ExportHtmlCommand}" />
+                            <MenuFlyoutItem Text="Share" Command="{Binding ShareCommand}" />
+                            <MenuFlyoutSeparator />
+                            <MenuFlyoutItem Text="{Binding ThemeMenuLabel}" Command="{Binding ToggleThemeCommand}" />
+                            <MenuFlyoutItem Text="Help (F1)" Command="{Binding GoToHelpCommand}" />
+                            <MenuFlyoutSeparator />
+                            <MenuFlyoutItem Text="About" Click="OnAboutClick" />
+                        </MenuFlyout>
+                    </Button.Flyout>
+                </Button>
+            </StackPanel>
+
+            <TextBlock Grid.Column="1"
+                       Text="{Binding Title}"
+                       VerticalAlignment="Center"
+                       HorizontalAlignment="Center"
+                       TextTrimming="CharacterEllipsis" />
+        </Grid>
+
+        <!-- ═══ Wiersz 1: Pasek formatowania ═══ -->
+        <ScrollViewer Grid.Row="1"
+                      Background="{ThemeResource FormatBarSurfaceBrush}"
+                      HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Disabled"
+                      Visibility="{Binding IsPreviewMode, Converter={StaticResource BoolToVisibility}, ConverterParameter=invert}">
+            <!-- AllowFocusOnInteraction=False zapobiega kradzieży fokusu z TextBox przy kliknięciu przycisku -->
+            <ScrollViewer.Resources>
+                <Style TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+                    <Setter Property="AllowFocusOnInteraction" Value="False" />
+                    <Setter Property="Background" Value="{ThemeResource FormatButtonBrush}" />
+                    <Setter Property="BorderBrush" Value="{ThemeResource FormatButtonBorderBrush}" />
+                    <Setter Property="BorderThickness" Value="1" />
+                    <!-- Jednolita wysokość/szerokość — przyciski z mniejszą czcionką nie kurczą się -->
+                    <Setter Property="Height" Value="34" />
+                    <Setter Property="MinWidth" Value="36" />
+                    <Setter Property="Padding" Value="6,0" />
+                    <Setter Property="VerticalAlignment" Value="Center" />
+                    <Setter Property="VerticalContentAlignment" Value="Center" />
+                    <Setter Property="HorizontalContentAlignment" Value="Center" />
+                </Style>
+            </ScrollViewer.Resources>
+            <StackPanel Orientation="Horizontal" Padding="4,2" Spacing="1">
+                <Button Content="B" FontWeight="Bold"        Click="OnFormatClick" Tag="bold"   ToolTipService.ToolTip="Bold (Ctrl+B)" />
+                <Button Content="I" FontStyle="Italic"        Click="OnFormatClick" Tag="italic" ToolTipService.ToolTip="Italic (Ctrl+I)" />
+                <Button Content="`" FontFamily="Consolas"     Click="OnFormatClick" Tag="code"   ToolTipService.ToolTip="Inline code" />
+                <AppBarSeparator />
+                <Button Content="H1" Click="OnFormatClick" Tag="h1" ToolTipService.ToolTip="Heading 1" />
+                <Button Content="H2" Click="OnFormatClick" Tag="h2" ToolTipService.ToolTip="Heading 2" />
+                <AppBarSeparator />
+                <Button Content="❝"  Click="OnFormatClick" Tag="quote" ToolTipService.ToolTip="Quote" />
+                <Button Content="•"  Click="OnFormatClick" Tag="ul"    ToolTipService.ToolTip="Bulleted list" />
+                <Button Content="1." Click="OnFormatClick" Tag="ol"    ToolTipService.ToolTip="Numbered list" />
+                <AppBarSeparator />
+                <Button Content="🔗 Link" Click="OnFormatClick" Tag="link" ToolTipService.ToolTip="Insert link" />
+                <AppBarSeparator />
+                <Button Content="```" FontFamily="Consolas" FontSize="11"
+                        Click="OnFormatClick" Tag="codeblock"
+                        ToolTipService.ToolTip="Code block" />
+                <AppBarSeparator />
+                <Button Content="|" FontFamily="Consolas"
+                        Click="OnFormatClick" Tag="pipe"
+                        ToolTipService.ToolTip="Table cell |" />
+                <Button Content="---" FontFamily="Consolas"
+                        Click="OnFormatClick" Tag="tabledash"
+                        ToolTipService.ToolTip="Horizontal rule ---" />
+                <Button Content="| — |" FontFamily="Consolas" FontSize="11"
+                        Click="OnFormatClick" Tag="tablesep"
+                        ToolTipService.ToolTip="Separator row | --- | --- |" />
+                <Button Content="⊞" FontSize="14"
+                        Click="OnFormatClick" Tag="table"
+                        ToolTipService.ToolTip="Insert 2×2 table" />
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- ═══ Wiersz 2: Pasek Szukaj / Zamień ═══ -->
+        <Border Grid.Row="2"
+                Background="{ThemeResource ToolbarSurfaceBrush}"
+                Padding="8,4"
+                Visibility="{Binding IsFindVisible, Converter={StaticResource BoolToVisibility}}">
+            <StackPanel Spacing="4">
+                <!-- wiersz Szukaj -->
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <TextBox x:Name="FindBox"
+                             Text="{Binding FindText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             PlaceholderText="Find..."
+                             KeyDown="OnFindBoxKeyDown"
+                             Width="200" />
+                    <TextBlock Text="{Binding MatchStatus}"
+                               VerticalAlignment="Center"
+                               MinWidth="64" />
+                    <Button Content="▲" Click="OnFindPrevious" ToolTipService.ToolTip="Previous match (Shift+F3)" />
+                    <Button Content="▼" Click="OnFindNext" ToolTipService.ToolTip="Next match (F3)" />
+                    <CheckBox Content="Aa" IsChecked="{Binding MatchCase, Mode=TwoWay}"
+                              VerticalAlignment="Center"
+                              ToolTipService.ToolTip="Match case" />
+                    <CheckBox Content="Whole words" IsChecked="{Binding WholeWord, Mode=TwoWay}"
+                              VerticalAlignment="Center"
+                              ToolTipService.ToolTip="Match whole words only" />
+                    <Button Content="⇄" Click="OnToggleReplace" ToolTipService.ToolTip="Show/hide replace (Ctrl+H)" />
+                    <Button Content="✕" Command="{Binding CloseFindCommand}" ToolTipService.ToolTip="Close find (Esc)" />
+                </StackPanel>
+                <!-- replace row (visible when IsReplaceVisible) -->
+                <StackPanel Orientation="Horizontal" Spacing="6"
+                            Visibility="{Binding IsReplaceVisible, Converter={StaticResource BoolToVisibility}}">
+                    <TextBox Text="{Binding ReplaceText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             PlaceholderText="Replace with..."
+                             Width="200" />
+                    <Button Content="Replace" Command="{Binding ReplaceCommand}" ToolTipService.ToolTip="Replace current match" />
+                    <Button Content="Replace all" Command="{Binding ReplaceAllCommand}" ToolTipService.ToolTip="Replace all matches" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- ═══ Wiersz 3: Edytor ═══ -->
+        <Border Grid.Row="3" Background="{ThemeResource EditorCanvasBrush}">
+            <TextBox x:Name="MarkdownEditor"
+                     TextChanged="OnMarkdownEditorTextChanged"
+                     AcceptsReturn="True"
+                     TextWrapping="Wrap"
+                     FontFamily="Consolas"
+                     FontSize="14"
+                     BorderThickness="0"
+                     Padding="12"
+                     Background="Transparent"
+                     VerticalAlignment="Stretch"
+                     HorizontalAlignment="Stretch" />
+        </Border>
+
+        <!-- ═══ Wiersz 4: Pasek statusu ═══ -->
+        <Border Grid.Row="4" Background="{ThemeResource ToolbarSurfaceBrush}" Padding="8,3">
+            <TextBlock Text="{Binding StatusText}" Opacity="0.7" FontSize="12" />
+        </Border>
+
+        <!-- ═══ Nakładka podglądu (wiersze 1–4) ═══ -->
+        <Grid Grid.Row="1" Grid.RowSpan="4"
+              Background="{ThemeResource PageSurfaceBrush}"
+              Visibility="{Binding IsPreviewMode, Converter={StaticResource BoolToVisibility}}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <Border x:Name="PreviewFindBar" Grid.Row="0"
+                    Background="{ThemeResource ToolbarSurfaceBrush}"
+                    Padding="8,4"
+                    Visibility="Collapsed">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <TextBox x:Name="PreviewFindBox"
+                             PlaceholderText="Find in preview..."
+                             Width="200"
+                             TextChanged="OnPreviewFindTextChanged" />
+                    <TextBlock x:Name="PreviewFindCount"
+                               VerticalAlignment="Center"
+                               MinWidth="64" />
+                    <Button Content="▲" Click="OnPreviewFindPrevious" ToolTipService.ToolTip="Previous match (Shift+F3)" />
+                    <Button Content="▼" Click="OnPreviewFindNext" ToolTipService.ToolTip="Next match (F3)" />
+                    <Button Content="✕" Click="OnPreviewCloseFind" ToolTipService.ToolTip="Close find (Esc)" />
+                </StackPanel>
+            </Border>
+
+            <controls:WebView2 x:Name="PreviewWeb" Grid.Row="1" />
+        </Grid>
+    </Grid>
+</Window>

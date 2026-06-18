@@ -1,0 +1,32 @@
+# Build output
+bin/
+obj/
+
+# Logs
+build.log
+*.log
+
+# User-specific files
+*.user
+
+# Sensitive files
+*.pfx
+*.p12
+
+# Claude Code internal
+.claude/
+
+# Backup/temp files
+*.full
+
+# Test files
+test.md
+
+# Compiled installer output
+installer/WinMD-Setup.exe
+
+# VS Code / Rider / VS
+.vs/
+.vscode/
+*.suo
+*.DotSettings.user
