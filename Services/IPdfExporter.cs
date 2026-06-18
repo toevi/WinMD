@@ -6,13 +6,12 @@ namespace WinMD.Services;
 public interface IPdfExporter
 {
     /// <summary>
-    /// Renderuje przekazany HTML i uruchamia eksport do PDF
-    /// (na Androidzie przez systemowy mechanizm drukowania → „Zapisz jako PDF").
+    /// Pyta o lokalizację i eksportuje przekazany HTML do pliku PDF.
     /// </summary>
     /// <param name="html">Kompletny dokument HTML do wydruku.</param>
-    /// <param name="jobName">Nazwa zadania / sugerowana nazwa pliku (bez rozszerzenia).</param>
-    /// <returns><c>true</c>, jeśli eksport został uruchomiony.</returns>
-    Task<bool> ExportAsync(string html, string jobName);
+    /// <param name="jobName">Sugerowana nazwa pliku (bez rozszerzenia).</param>
+    /// <returns><c>true</c> — zapisano; <c>null</c> — użytkownik anulował; <c>false</c> — błąd.</returns>
+    Task<bool?> ExportAsync(string html, string jobName);
 
     /// <summary>
     /// Renderuje HTML do pliku PDF (po cichu, bez dialogu druku) i zwraca ścieżkę do pliku.

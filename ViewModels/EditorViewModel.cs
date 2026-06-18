@@ -214,9 +214,12 @@ public partial class EditorViewModel : ObservableObject
             if (string.IsNullOrWhiteSpace(jobName))
                 jobName = "document";
 
-            var ok = await _pdfExporter.ExportAsync(html, jobName);
-            if (!ok)
+            var result = await _pdfExporter.ExportAsync(html, jobName);
+            if (result == true)
+                _ui.Toast("Exported PDF");
+            else if (result == false)
                 await ShowErrorAsync("Could not export to PDF.", null);
+            // result == null → anulowano, nic nie pokazujemy
         }
         catch (Exception ex)
         {

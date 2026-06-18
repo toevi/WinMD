@@ -1,43 +1,60 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using WinMD.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.Web.WebView2.Core;
+using Windows.Storage.Pickers;
 
 namespace WinMD.Platforms.Windows;
 
 /// <summary>
 /// Implementacja <see cref="IPdfExporter"/> dla Windows oparta o WebView2.
-/// „Print"/„Export PDF" otwierają systemowy dialog druku (zawiera „Microsoft Print to PDF"
-/// oraz drukarki fizyczne); udostępnianie PDF renderuje plik po cichu przez PrintToPdf.
+/// „Export PDF" pyta o lokalizację (FileSavePicker) i renderuje plik po cichu przez PrintToPdf —
+/// świadomie bez systemowego dialogu druku, który w aplikacji unpackaged otwiera się poza ekranem
+/// (jest przyczepiony do off-screen WebView2 w procesie msedgewebview2.exe). Udostępnianie PDF
+/// korzysta z tego samego renderu do pliku tymczasowego.
 /// </summary>
 public sealed class WindowsPdfExporter : IPdfExporter
 {
-    // WebView2 musi pozostać żywy do czasu zakończenia drukowania (renderuje zadanie z DOM).
-    // Trzymamy referencję i sprzątamy poprzednie zadanie przy starcie kolejnego.
-    private static Popup? _printPopup;
-    private static WebView2? _printWebView;
-
-    public async Task<bool> ExportAsync(string html, string jobName)
+    public async Task<bool?> ExportAsync(string html, string jobName)
     {
+        WebView2? webView = null;
+        Popup? popup = null;
         try
         {
-            var core = await PreparePrintWebViewAsync(html);
+            var name = string.IsNullOrWhiteSpace(jobName) ? "document" : jobName;
+
+            var picker = new FileSavePicker
+            {
+                SuggestedStartLocation = PickerLocationId.DocumentsLibrary,
+                SuggestedFileName = name,
+            };
+            picker.FileTypeChoices.Add("PDF", new List<string> { ".pdf" });
+            InitializeWithWindow(picker);
+
+            var file = await picker.PickSaveFileAsync();
+            if (file is null)
+                return null; // użytkownik anulował — to nie błąd
+
+            (webView, popup) = CreateOffScreenWebView();
+            var core = await LoadHtmlAsync(webView, html);
             if (core is null)
                 return false;
 
-            // Dialog systemowy: webview może zostać poza ekranem; zostawiamy go żywego do końca druku.
-            core.ShowPrintUI(CoreWebView2PrintDialogKind.System);
-            return true;
+            return await core.PrintToPdfAsync(file.Path, null);
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[WindowsPdfExporter] ExportAsync failed: {ex}");
             return false;
+        }
+        finally
+        {
+            Detach(popup, webView);
         }
     }
 
@@ -65,16 +82,6 @@ public sealed class WindowsPdfExporter : IPdfExporter
         {
             Detach(popup, webView);
         }
-    }
-
-    /// <summary>Tworzy off-screen WebView2 dla druku, sprzątając poprzedni, i ładuje HTML.</summary>
-    private static async Task<CoreWebView2?> PreparePrintWebViewAsync(string html)
-    {
-        DetachPrint();
-        var (webView, popup) = CreateOffScreenWebView();
-        _printWebView = webView;
-        _printPopup = popup;
-        return await LoadHtmlAsync(webView, html);
     }
 
     private static (WebView2 webView, Popup popup) CreateOffScreenWebView()
@@ -117,7 +124,15 @@ public sealed class WindowsPdfExporter : IPdfExporter
         return core;
     }
 
-    private static void DetachPrint() => Detach(_printPopup, _printWebView);
+    /// <summary>Pickery WinRT w aplikacji desktop wymagają powiązania z uchwytem okna (HWND).</summary>
+    private static void InitializeWithWindow(object picker)
+    {
+        if (WinMD.App.MainWindow is { } window)
+        {
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
+            WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
+        }
+    }
 
     private static void Detach(Popup? popup, WebView2? webView)
     {
@@ -131,10 +146,5 @@ public sealed class WindowsPdfExporter : IPdfExporter
         {
             System.Diagnostics.Debug.WriteLine($"[WindowsPdfExporter] Detach failed: {ex}");
         }
-
-        if (ReferenceEquals(popup, _printPopup))
-            _printPopup = null;
-        if (ReferenceEquals(webView, _printWebView))
-            _printWebView = null;
     }
 }

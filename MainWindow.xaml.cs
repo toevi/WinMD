@@ -7,6 +7,8 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.Web.WebView2.Core;
 using WinMD.Services;
 using WinMD.ViewModels;
+using Windows.ApplicationModel.DataTransfer;
+using Windows.Foundation;
 using Windows.System;
 
 namespace WinMD;
@@ -402,7 +404,7 @@ public sealed partial class MainWindow : Window, IUiService
         });
         panel.Children.Add(new TextBlock
         {
-            Text = "Version 1.0.0",
+            Text = "Version 1.1.0",
             FontSize = 12,
             Opacity = 0.55,
             Margin = new Thickness(0, 2, 0, 10),
@@ -419,7 +421,7 @@ public sealed partial class MainWindow : Window, IUiService
 
         var dev = new TextBlock { HorizontalAlignment = HorizontalAlignment.Center, FontSize = 14 };
         dev.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = "Developer  ", Foreground = brandColor, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
-        dev.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = "Tomek Masłowski" });
+        dev.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = "Tomek Masłowski / tmfgroup" });
         panel.Children.Add(dev);
 
         panel.Children.Add(new TextBlock
@@ -442,26 +444,69 @@ public sealed partial class MainWindow : Window, IUiService
         await dialog.ShowAsync();
     }
 
-    public Task ShareFileAsync(string path, string title)
+    public async Task ShareFileAsync(string path, string title)
     {
-        // Na desktopie „udostępnij" = pokaż gotowy plik w Eksploratorze (zaznaczony), skąd użytkownik
-        // może go wysłać/skopiować. Prostsze i pewniejsze niż UI udostępniania w aplikacji unpackaged.
+        // Systemowy arkusz udostępniania Windows (jak share na Androidzie). W aplikacji unpackaged
+        // nie ma DataTransferManager.GetForCurrentView(), więc pobieramy instancję przez interop
+        // (IDataTransferManagerInterop) powiązaną z uchwytem okna (HWND).
         try
         {
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            var file = await Windows.Storage.StorageFile.GetFileFromPathAsync(path);
+
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+            var interop = DataTransferManager.As<IDataTransferManagerInterop>();
+            var dtmIid = _dtmIid;
+            var managerPtr = interop.GetForWindow(hwnd, ref dtmIid);
+            var manager = WinRT.MarshalInterface<DataTransferManager>.FromAbi(managerPtr);
+
+            TypedEventHandler<DataTransferManager, DataRequestedEventArgs>? handler = null;
+            handler = (sender, args) =>
             {
-                FileName = "explorer.exe",
-                Arguments = $"/select,\"{path}\"",
-                UseShellExecute = true,
-            });
-            Toast("Saved: " + System.IO.Path.GetFileName(path));
+                var data = args.Request.Data;
+                data.Properties.Title = title;
+                data.SetStorageItems(new[] { file });
+                sender.DataRequested -= handler; // jednorazowo — nie zostawiamy wiszącego subskrybenta
+            };
+            manager.DataRequested += handler;
+
+            interop.ShowShareUIForWindow(hwnd);
         }
-        catch
+        catch (Exception)
         {
-            Toast("Saved to " + path);
+            // Gdyby arkusz nie był dostępny — awaryjnie pokaż plik w Eksploratorze.
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "explorer.exe",
+                    Arguments = $"/select,\"{path}\"",
+                    UseShellExecute = true,
+                });
+                Toast("Saved: " + System.IO.Path.GetFileName(path));
+            }
+            catch
+            {
+                Toast("Saved to " + path);
+            }
         }
-        return Task.CompletedTask;
     }
+
+    // IDataTransferManagerInterop — pozwala uzyskać DataTransferManager dla okna desktop (unpackaged).
+    [System.Runtime.InteropServices.ComImport]
+    [System.Runtime.InteropServices.Guid("3A3DCD6C-3EAB-43DC-BCDE-45671CE800C8")]
+    [System.Runtime.InteropServices.InterfaceType(
+        System.Runtime.InteropServices.ComInterfaceType.InterfaceIsIUnknown)]
+    private interface IDataTransferManagerInterop
+    {
+        IntPtr GetForWindow(
+            [System.Runtime.InteropServices.In] IntPtr appWindow,
+            [System.Runtime.InteropServices.In] ref Guid riid);
+        void ShowShareUIForWindow([System.Runtime.InteropServices.In] IntPtr appWindow);
+    }
+
+    // IID_IDataTransferManager
+    private static readonly Guid _dtmIid =
+        new(0xa5caee9b, 0x8708, 0x49d1, 0x8d, 0x36, 0x67, 0xd2, 0x5a, 0x8d, 0xa0, 0x0c);
 
     public ITimerLite CreateTimer(TimeSpan interval, Action onTick)
     {
