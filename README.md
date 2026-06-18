@@ -23,22 +23,13 @@ Download **WinMD-Setup.exe** from the [latest release](https://github.com/toevi/
 
 ## Building from source
 
-Prerequisites: .NET 10 SDK and the Windows SDK workload:
+Prerequisites: .NET 10 SDK with the Windows workload.
 
 ```powershell
-dotnet workload install microsoft-windows-sdk-net
-```
-
-```powershell
-# Debug build
-dotnet build -c Debug -f net10.0-windows10.0.19041.0
-
-# Build and run
 dotnet build -c Debug -t:Run -f net10.0-windows10.0.19041.0
-
-# Release publish (self-contained, win-x64)
-dotnet publish -c Release -f net10.0-windows10.0.19041.0 -r win-x64
 ```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide (project layout, conventions, building an installer).
 
 ## Architecture
 
@@ -50,8 +41,8 @@ WinUI 3 app (Windows App SDK 1.8), unpackaged `.exe`, MVVM pattern.
 | `HelpWindow.xaml` | Help window with keyboard shortcut reference |
 | `ViewModels/EditorViewModel.cs` | Single ViewModel — all application state |
 | `Services/MarkdownService.cs` | Markdown → HTML conversion (Markdig + CSS template) |
-| `Services/WindowsFileService.cs` | WinRT pickers + System.IO |
-| `Services/WindowsPdfExporter.cs` | PDF export via WebView2 |
+| `Platforms/Windows/WindowsFileService.cs` | WinRT pickers + System.IO |
+| `Platforms/Windows/WindowsPdfExporter.cs` | PDF export via WebView2 |
 | `Models/MarkdownDocument.cs` | Document data carrier |
 | `Platforms/Windows/FileAssociation.cs` | `.md` file association registered in HKCU |
 
