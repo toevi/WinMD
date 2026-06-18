@@ -1,60 +1,66 @@
 # WinMD
 
-Edytor i przeglądarka plików Markdown dla Windows — lekki, szybki, bez instalacji MSIX.
+A lightweight Markdown editor and viewer for Windows — no MSIX, no Store, just a plain `.exe`.
 
-## Funkcje
+## Features
 
-- **Edycja** z paskiem formatowania (pogrubienie, kursywa, nagłówki, listy, linki, kod)
-- **Podgląd** HTML renderowany przez Markdig z motywem GitHub (jasny / ciemny)
-- **Eksport do PDF** przez WebView2
-- **Znajdź / zamień** w edytorze i znajdź w podglądzie (wstrzyknięty JS)
-- **Undo / redo** z koalescencją naciśnięć klawiatury (600 ms debounce)
-- **Skojarzenie pliku** — otwieranie `.md` z Eksploratora przez dwuklik
-- **Skróty klawiszowe**: Ctrl+N/O/S, Ctrl+P (PDF), Ctrl+B/I, Ctrl+E (tryb), Ctrl+F/H, F3/Shift+F3, F1
+- **Editor** with a formatting toolbar (bold, italic, headings, lists, links, code)
+- **Live preview** rendered by Markdig with a GitHub-style stylesheet (light / dark theme)
+- **PDF export** via WebView2
+- **Find / Replace** in the editor; find in the rendered preview (injected JS)
+- **Undo / Redo** with keystroke coalescing (600 ms debounce groups a typing burst into one history step)
+- **File association** — open `.md` files by double-clicking in Explorer
+- **Keyboard shortcuts**: Ctrl+N/O/S, Ctrl+P (PDF), Ctrl+B/I, Ctrl+E (toggle editor/preview), Ctrl+F/H, F3/Shift+F3, F1 (help)
 
-## Wymagania
+## Requirements
 
-- Windows 10 w. 1903 (19041) lub nowszy (x64 lub ARM64)
-- [Windows App SDK 1.8](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/downloads) — instalator pobiera go automatycznie
+- Windows 10 version 1903 (19041) or later — x64 or ARM64
+- [Windows App SDK 1.8](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/downloads) — the installer downloads it automatically if missing
 
-## Kompilacja
+## Installation
 
-Wymagania:
-- .NET 10 SDK
-- Workload `microsoft-windows-sdk-net`: `dotnet workload install microsoft-windows-sdk-net`
+Download **WinMD-Setup.exe** from the [latest release](https://github.com/toevi/WinMD/releases/latest) and run it.
+
+## Building from source
+
+Prerequisites: .NET 10 SDK and the Windows SDK workload:
 
 ```powershell
-# Budowanie
+dotnet workload install microsoft-windows-sdk-net
+```
+
+```powershell
+# Debug build
 dotnet build -c Debug -f net10.0-windows10.0.19041.0
 
-# Budowanie i uruchamianie
+# Build and run
 dotnet build -c Debug -t:Run -f net10.0-windows10.0.19041.0
 
-# Publikacja (self-contained, win-x64)
+# Release publish (self-contained, win-x64)
 dotnet publish -c Release -f net10.0-windows10.0.19041.0 -r win-x64
 ```
 
-## Architektura
+## Architecture
 
-Aplikacja WinUI 3 (Windows App SDK 1.8), unpackaged `.exe`, wzorzec MVVM.
+WinUI 3 app (Windows App SDK 1.8), unpackaged `.exe`, MVVM pattern.
 
-| Warstwa | Opis |
-|---------|------|
-| `MainWindow.xaml` | Główne okno — pasek narzędziowy i panel edytora/podglądu |
-| `HelpWindow.xaml` | Okno pomocy z listą skrótów |
-| `ViewModels/EditorViewModel.cs` | Jedyny ViewModel — cały stan aplikacji |
-| `Services/MarkdownService.cs` | Konwersja Markdown → HTML (Markdig + szablon CSS) |
-| `Services/WindowsFileService.cs` | WinRT picker + System.IO |
-| `Services/WindowsPdfExporter.cs` | Eksport PDF przez WebView2 |
-| `Models/MarkdownDocument.cs` | Nośnik danych dokumentu |
-| `Platforms/Windows/FileAssociation.cs` | Rejestracja skojarzenia `.md` w HKCU |
+| Layer | Description |
+|-------|-------------|
+| `MainWindow.xaml` | Main window — toolbar and editor/preview panel |
+| `HelpWindow.xaml` | Help window with keyboard shortcut reference |
+| `ViewModels/EditorViewModel.cs` | Single ViewModel — all application state |
+| `Services/MarkdownService.cs` | Markdown → HTML conversion (Markdig + CSS template) |
+| `Services/WindowsFileService.cs` | WinRT pickers + System.IO |
+| `Services/WindowsPdfExporter.cs` | PDF export via WebView2 |
+| `Models/MarkdownDocument.cs` | Document data carrier |
+| `Platforms/Windows/FileAssociation.cs` | `.md` file association registered in HKCU |
 
-## Stos technologiczny
+## Tech stack
 
 - [Windows App SDK 1.8](https://github.com/microsoft/WindowsAppSDK) — WinUI 3, WebView2
 - [CommunityToolkit.Mvvm 8.4](https://github.com/CommunityToolkit/dotnet) — `ObservableObject`, `RelayCommand`
-- [Markdig 1.3](https://github.com/xoofx/markdig) — parser Markdown
+- [Markdig 1.3](https://github.com/xoofx/markdig) — Markdown parser
 
-## Licencja
+## License
 
 [MIT](LICENSE)
